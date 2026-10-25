@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -31,6 +33,22 @@ const catalog: PublicRequestCatalog = {
 };
 
 describe("public request wizard rules", () => {
+  it("tracks confirmation only after a successful server completion", async () => {
+    const source = await readFile(
+      resolve(process.cwd(), "src/features/public-request/components/request-wizard.tsx"),
+      "utf8",
+    );
+    const alreadyComplete = source.indexOf('preparation.status === "already_complete"');
+    const completeAction = source.indexOf("await completePublicRequestAction");
+    const completionError = source.indexOf('completion.status === "error"');
+    const tracking = source.indexOf("trackRequestConfirmed(draft.submissionId, locale)");
+
+    expect(alreadyComplete).toBeGreaterThan(-1);
+    expect(completeAction).toBeGreaterThan(alreadyComplete);
+    expect(completionError).toBeGreaterThan(completeAction);
+    expect(tracking).toBeGreaterThan(completionError);
+  });
+
   it("reports only the current step's missing fields", () => {
     const draft = createEmptyRequestDraft("ar");
 

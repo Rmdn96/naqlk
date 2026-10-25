@@ -20,7 +20,19 @@ Do not reuse production credentials in local or preview environments.
 
 ## Environment contract
 
-Start from `.env.example`. Public variables may be embedded in browser bundles. `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` is the browser-safe project key and does not replace authorization. `SUPABASE_SECRET_KEY` is privileged, server-only, limited to approved operator tooling, and must be stored in Vercel's encrypted environment settings only when that tooling runs there. Rotate any value that is accidentally exposed.
+Start from `.env.example`. Next.js replaces `NEXT_PUBLIC_*` values in the browser bundle at build time, so changing them in Hostinger or another host requires a new build and deployment. Public variables are not secrets. `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` is the browser-safe project key and does not replace authorization. `SUPABASE_SECRET_KEY` is privileged, server-only, limited to approved operator tooling, and must be stored in encrypted environment settings only when that tooling runs there. Rotate any value that is accidentally exposed.
+
+### Google Ads on Hostinger
+
+Set these values in the Hostinger build environment before building the production bundle:
+
+```dotenv
+NEXT_PUBLIC_GOOGLE_ADS_TRACKING_ENABLED=true
+NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL=625xCKaL_58dEN34s_5E
+NEXT_PUBLIC_GOOGLE_ADS_TESTING=false
+```
+
+Keep `NEXT_PUBLIC_GOOGLE_ADS_CONSENT_GRANTED` false or unset unless setting it to true accurately reflects the approved consent mechanism. The application does not grant consent automatically. Rebuild after any change, then verify the tag only in an appropriately consented browser session; do not create a real request or synthetic Ads conversion as a deployment test.
 
 ## Release verification
 

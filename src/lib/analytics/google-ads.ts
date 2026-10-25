@@ -34,6 +34,22 @@ function getDedupeStorage(): Storage | null {
   }
 }
 
+function hasTrackedSubmission(storage: Storage | null, dedupeKey: string): boolean {
+  try {
+    return storage?.getItem(dedupeKey) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function persistTrackedSubmission(storage: Storage | null, dedupeKey: string): void {
+  try {
+    storage?.setItem(dedupeKey, "1");
+  } catch {
+    // In-memory dedupe still protects the current page when storage is unavailable.
+  }
+}
+
 function sendGoogleAdsEvent(
   eventName: GoogleAdsEventName,
   params: GoogleAdsEventParams = {},
@@ -50,10 +66,6 @@ function sendGoogleAdsEvent(
   }
 }
 
-/**
- * Isolated future hook for the real Ads conversion action. It intentionally
- * does nothing until a genuine label is supplied by Google Ads configuration.
- */
 export function trackRequestConfirmedConversion(locale: "ar" | "en"): void {
   if (!GOOGLE_ADS_CONVERSION_LABEL || !isGoogleAdsTrackingAllowed()) return;
   if (typeof window === "undefined" || !window.gtag) return;
@@ -86,12 +98,15 @@ export function trackRequestConfirmed(submissionId: string, locale: "ar" | "en")
   const storage = getDedupeStorage();
   const dedupeKey = `naqlk:google-ads:request-confirmed:${submissionId}`;
 
-  try {
-    if (confirmedSubmissionIds.has(submissionId) || storage?.getItem(dedupeKey) === "1") return;
-    if (!sendGoogleAdsEvent("request_confirmed", { locale })) return;
-    confirmedSubmissionIds.add(submissionId);
-    storage?.setItem(dedupeKey, "1");
-  } catch {
-    // Tracking must never affect request submission or navigation.
+  if (confirmedSubmissionIds.has(submissionId) || hasTrackedSubmission(storage, dedupeKey)) return;
+
+  // Reserve the submission before invoking third-party code to prevent re-entrant duplicates.
+  confirmedSubmissionIds.add(submissionId);
+  if (!sendGoogleAdsEvent("request_confirmed", { locale })) {
+    confirmedSubmissionIds.delete(submissionId);
+    return;
   }
+
+  trackRequestConfirmedConversion(locale);
+  persistTrackedSubmission(storage, dedupeKey);
 }
