@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 
 import { SiteFooter } from "@/components/shared/site-footer";
 import { SiteHeader } from "@/components/shared/site-header";
+import { GoogleAdsTag } from "@/components/analytics/google-ads-tag";
 import { PublicChrome } from "@/components/shared/public-chrome";
 import { MobileRequestCta } from "@/components/shared/mobile-request-cta";
 import { BRAND } from "@/config/brand";
@@ -43,6 +44,7 @@ export default async function LocaleLayout({
   return (
     <html dir={locale === "ar" ? "rtl" : "ltr"} lang={locale}>
       <body>
+        <GoogleAdsTag />
         <NextIntlClientProvider messages={messages}>
           <a
             className="fixed start-4 top-3 z-[100] -translate-y-24 rounded-md bg-primary px-4 py-3 font-bold text-primary-foreground transition focus:translate-y-0"

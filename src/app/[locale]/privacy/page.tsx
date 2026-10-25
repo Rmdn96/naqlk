@@ -18,7 +18,9 @@ export async function generateMetadata({ params }: PrivacyPageProps): Promise<Me
 
   return {
     alternates: getLocaleAlternates(locale, "/privacy"),
+    description: t("metaDescription"),
     openGraph: {
+      description: t("metaDescription"),
       locale: locale === "ar" ? "ar_SA" : "en_SA",
       siteName: getBrandName(locale),
       title: t("metaTitle"),
@@ -26,7 +28,11 @@ export async function generateMetadata({ params }: PrivacyPageProps): Promise<Me
       url: `/${locale}/privacy`,
     },
     title: t("metaTitle"),
-    twitter: { card: "summary", title: t("metaTitle") },
+    twitter: {
+      card: "summary",
+      description: t("metaDescription"),
+      title: t("metaTitle"),
+    },
   };
 }
 

@@ -30,6 +30,18 @@ describe("SEO and Local SEO runtime", () => {
     expect(city).not.toContain("VERCEL_URL");
   });
 
+  it("provides localized, indexable privacy metadata", () => {
+    const privacy = read("src/app/[locale]/privacy/page.tsx");
+    const english = JSON.parse(read("messages/en.json"));
+    const arabic = JSON.parse(read("messages/ar.json"));
+
+    expect(privacy.match(/description: t\("metaDescription"\)/g)).toHaveLength(3);
+    expect(english.Privacy.metaDescription).toBeTruthy();
+    expect(arabic.Privacy.metaDescription).toBeTruthy();
+    expect(english.Privacy.metaDescription).not.toBe(arabic.Privacy.metaDescription);
+    expect(privacy).not.toContain("noindex");
+  });
+
   it("generates sitemap from explicit publication readiness and excludes private surfaces", () => {
     const sitemap = read("src/app/sitemap.ts");
     const robots = read("src/app/robots.ts");

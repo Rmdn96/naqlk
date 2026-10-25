@@ -13,6 +13,7 @@ import {
   type ContactNumber,
 } from "@/config/contact";
 import { cn } from "@/utils/cn";
+import { trackWhatsAppOpened } from "@/lib/analytics/google-ads";
 
 type ContactNumberPickerProps = {
   message: string;
@@ -242,7 +243,10 @@ function ContactOption({
               "size-9 bg-emerald-600 px-0 hover:bg-emerald-700",
             )}
             href={whatsappHref}
-            onClick={onComplete}
+            onClick={() => {
+              trackWhatsAppOpened();
+              onComplete();
+            }}
             rel="noreferrer"
             target="_blank"
           >

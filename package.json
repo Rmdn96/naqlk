@@ -44,6 +44,7 @@
     },
     "nanoid": "6.0.2",
     "postcss": "8.5.30",
+    "postcss-selector-parser": "6.1.5",
     "proxy-addr": "2.0.8",
     "qs": "6.16.0",
     "sharp": "0.35.5",

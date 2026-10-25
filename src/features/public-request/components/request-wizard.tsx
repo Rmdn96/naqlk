@@ -41,6 +41,7 @@ import type {
   PublicRequestCatalog,
 } from "@/features/public-request/types/public-request";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import { trackRequestConfirmed, trackRequestStarted } from "@/lib/analytics/google-ads";
 import { useRouter } from "@/i18n/navigation";
 import { cn } from "@/utils/cn";
 
@@ -81,6 +82,7 @@ export function RequestWizard({
   const [submitting, setSubmitting] = useState(false);
   const errorSummaryRef = useRef<HTMLDivElement>(null);
   const prefillApplied = useRef(false);
+  const requestStartedTracked = useRef(false);
   const BackIcon = locale === "ar" ? ArrowRight : ArrowLeft;
   const NextIcon = locale === "ar" ? ArrowLeft : ArrowRight;
   const stepNames = useMemo(
@@ -270,6 +272,7 @@ export function RequestWizard({
         return;
       }
 
+      trackRequestConfirmed(draft.submissionId, locale);
       clearDraft();
       router.push({ pathname: "/request/success", query: { reference: completion.reference } });
     } catch {
@@ -283,6 +286,11 @@ export function RequestWizard({
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (!requestStartedTracked.current) {
+      requestStartedTracked.current = true;
+      trackRequestStarted(locale);
+    }
 
     if (step === TOTAL_STEPS) {
       void submitRequest();
