@@ -32,7 +32,7 @@ NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL=625xCKaL_58dEN34s_5E
 NEXT_PUBLIC_GOOGLE_ADS_TESTING=false
 ```
 
-Keep `NEXT_PUBLIC_GOOGLE_ADS_CONSENT_GRANTED` false or unset unless setting it to true accurately reflects the approved consent mechanism. The application does not grant consent automatically. Rebuild after any change, then verify the tag only in an appropriately consented browser session; do not create a real request or synthetic Ads conversion as a deployment test.
+The application does not currently have a visitor-specific advertising-consent banner or preference store. The request-form privacy acknowledgement covers processing the request, not Google Ads. `NEXT_PUBLIC_GOOGLE_ADS_CONSENT_GRANTED` is only a build-time, deployment-wide gate and is not evidence of visitor consent. Keep it false or unset until an approved consent mechanism or documented lawful basis is implemented; then integrate that decision at runtime before loading the tag or sending events. Rebuild after any build-time configuration change, and do not create a real request or synthetic Ads conversion as a deployment test.
 
 ## Release verification
 

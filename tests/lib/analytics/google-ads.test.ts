@@ -138,12 +138,40 @@ describe("Google Ads tracking infrastructure", () => {
     expect(gtag).toHaveBeenCalledTimes(2);
   });
 
-  it("does not let a gtag failure escape into the request flow", async () => {
-    window.gtag = vi.fn(() => {
-      throw new Error("gtag unavailable");
+  it("still sends the conversion and retries only the confirmation event when that call fails", async () => {
+    const gtag = vi.fn().mockImplementationOnce(() => {
+      throw new Error("request event failed");
     });
+    window.gtag = gtag;
     const { trackRequestConfirmed } = await loadGoogleAds();
 
     expect(() => trackRequestConfirmed("submission-8", "ar")).not.toThrow();
+    trackRequestConfirmed("submission-8", "ar");
+
+    expect(gtag.mock.calls).toEqual([
+      ["event", "request_confirmed", { locale: "ar" }],
+      ["event", "conversion", { locale: "ar", send_to: "AW-18518703197/625xCKaL_58dEN34s_5E" }],
+      ["event", "request_confirmed", { locale: "ar" }],
+    ]);
+  });
+
+  it("retries only the conversion when its gtag call fails", async () => {
+    let conversionAttempts = 0;
+    const gtag = vi.fn((command, target) => {
+      if (command === "event" && target === "conversion" && conversionAttempts++ === 0) {
+        throw new Error("conversion failed");
+      }
+    });
+    window.gtag = gtag;
+    const { trackRequestConfirmed } = await loadGoogleAds();
+
+    expect(() => trackRequestConfirmed("submission-9", "en")).not.toThrow();
+    trackRequestConfirmed("submission-9", "en");
+
+    expect(gtag.mock.calls).toEqual([
+      ["event", "request_confirmed", { locale: "en" }],
+      ["event", "conversion", { locale: "en", send_to: "AW-18518703197/625xCKaL_58dEN34s_5E" }],
+      ["event", "conversion", { locale: "en", send_to: "AW-18518703197/625xCKaL_58dEN34s_5E" }],
+    ]);
   });
 });

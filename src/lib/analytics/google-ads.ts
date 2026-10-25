@@ -19,7 +19,8 @@ declare global {
 const TRACKING_ENABLED = process.env.NEXT_PUBLIC_GOOGLE_ADS_TRACKING_ENABLED === "true";
 const CONSENT_GRANTED = process.env.NEXT_PUBLIC_GOOGLE_ADS_CONSENT_GRANTED === "true";
 const TESTING_ENABLED = process.env.NEXT_PUBLIC_GOOGLE_ADS_TESTING === "true";
-const confirmedSubmissionIds = new Set<string>();
+const confirmedEventSubmissionIds = new Set<string>();
+const confirmedConversionSubmissionIds = new Set<string>();
 
 function isGoogleAdsTrackingAllowed(): boolean {
   if (!TRACKING_ENABLED || !CONSENT_GRANTED) return false;
@@ -66,17 +67,19 @@ function sendGoogleAdsEvent(
   }
 }
 
-export function trackRequestConfirmedConversion(locale: "ar" | "en"): void {
-  if (!GOOGLE_ADS_CONVERSION_LABEL || !isGoogleAdsTrackingAllowed()) return;
-  if (typeof window === "undefined" || !window.gtag) return;
+export function trackRequestConfirmedConversion(locale: "ar" | "en"): boolean {
+  if (!GOOGLE_ADS_CONVERSION_LABEL || !isGoogleAdsTrackingAllowed()) return false;
+  if (typeof window === "undefined" || !window.gtag) return false;
 
   try {
     window.gtag("event", "conversion", {
       locale,
       send_to: `${GOOGLE_ADS_TAG_ID}/${GOOGLE_ADS_CONVERSION_LABEL}`,
     });
+    return true;
   } catch {
     // Tracking must never affect request submission or navigation.
+    return false;
   }
 }
 
@@ -93,20 +96,35 @@ export function trackWhatsAppOpened(): void {
  * included in the event parameters sent to Google.
  */
 export function trackRequestConfirmed(submissionId: string, locale: "ar" | "en"): void {
-  if (!isGoogleAdsTrackingAllowed() || typeof window === "undefined") return;
+  if (!isGoogleAdsTrackingAllowed() || typeof window === "undefined" || !window.gtag) return;
 
   const storage = getDedupeStorage();
-  const dedupeKey = `naqlk:google-ads:request-confirmed:${submissionId}`;
+  const dedupeKeyPrefix = `naqlk:google-ads:request-confirmed:${submissionId}`;
+  const eventDedupeKey = `${dedupeKeyPrefix}:event`;
+  const conversionDedupeKey = `${dedupeKeyPrefix}:conversion`;
 
-  if (confirmedSubmissionIds.has(submissionId) || hasTrackedSubmission(storage, dedupeKey)) return;
-
-  // Reserve the submission before invoking third-party code to prevent re-entrant duplicates.
-  confirmedSubmissionIds.add(submissionId);
-  if (!sendGoogleAdsEvent("request_confirmed", { locale })) {
-    confirmedSubmissionIds.delete(submissionId);
-    return;
+  if (
+    !confirmedEventSubmissionIds.has(submissionId) &&
+    !hasTrackedSubmission(storage, eventDedupeKey)
+  ) {
+    confirmedEventSubmissionIds.add(submissionId);
+    if (sendGoogleAdsEvent("request_confirmed", { locale })) {
+      persistTrackedSubmission(storage, eventDedupeKey);
+    } else {
+      confirmedEventSubmissionIds.delete(submissionId);
+    }
   }
 
-  trackRequestConfirmedConversion(locale);
-  persistTrackedSubmission(storage, dedupeKey);
+  if (
+    GOOGLE_ADS_CONVERSION_LABEL &&
+    !confirmedConversionSubmissionIds.has(submissionId) &&
+    !hasTrackedSubmission(storage, conversionDedupeKey)
+  ) {
+    confirmedConversionSubmissionIds.add(submissionId);
+    if (trackRequestConfirmedConversion(locale)) {
+      persistTrackedSubmission(storage, conversionDedupeKey);
+    } else {
+      confirmedConversionSubmissionIds.delete(submissionId);
+    }
+  }
 }
