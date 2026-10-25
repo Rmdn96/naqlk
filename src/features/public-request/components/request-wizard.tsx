@@ -272,6 +272,7 @@ export function RequestWizard({
         return;
       }
 
+      // Only a newly completed server transaction may emit the confirmation and Ads conversion.
       trackRequestConfirmed(draft.submissionId, locale);
       clearDraft();
       router.push({ pathname: "/request/success", query: { reference: completion.reference } });

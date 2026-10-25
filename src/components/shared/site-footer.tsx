@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server";
 
+import { GoogleAdsConsentSettingsButton } from "@/components/analytics/google-ads-consent-settings-button";
 import { Brand } from "@/components/shared/brand";
 import { ContactNumberPicker } from "@/components/shared/contact-number-picker";
 import { getLocale } from "next-intl/server";
@@ -47,6 +48,7 @@ export async function SiteFooter() {
           <Link className="hover:underline" href="/privacy">
             {t("privacy")}
           </Link>
+          <GoogleAdsConsentSettingsButton />
           <Link className="hover:underline" href="/track">
             {t("trackRequest")}
           </Link>

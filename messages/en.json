@@ -35,6 +35,15 @@
     "close": "Close",
     "unavailable": "No contact numbers are currently available."
   },
+  "GoogleAdsConsent": {
+    "title": "Advertising privacy choices",
+    "description": "Allow Google Ads measurement to help us understand which requests result from our advertising. The tag stays off unless you accept.",
+    "privacy": "Read the privacy notice",
+    "accept": "Accept advertising measurement",
+    "reject": "Reject",
+    "manage": "Advertising privacy choices",
+    "storageError": "We could not save your choice, so advertising measurement remains disabled."
+  },
   "Home": {
     "metaTitle": "Naqlk | Request transport in Riyadh and across Saudi cities",
     "metaDescription": "Submit a furniture moving or cargo request in minutes. Naqlk reviews every request before preparing the right quotation.",
@@ -430,6 +439,8 @@
     "storageBody": "Attachments are stored privately and are not published. Access is limited by authorization and operational purpose.",
     "choiceTitle": "Your choices",
     "choiceBody": "Email and photos are optional. We cannot review a request without a name, mobile number, route addresses, and cargo description.",
+    "advertisingTitle": "Advertising measurement",
+    "advertisingBody": "Google Ads measurement stays disabled unless you accept it in the advertising privacy prompt. Your choice is stored in this browser and can be changed later from the site footer.",
     "back": "Back to the request"
   }
 }
