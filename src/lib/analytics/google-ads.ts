@@ -1,3 +1,5 @@
+import { hasGrantedGoogleAdsConsent } from "@/lib/analytics/google-ads-consent";
+
 export const GOOGLE_ADS_TAG_ID = "AW-18518703197" as const;
 const GOOGLE_ADS_CONVERSION_LABEL = process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL?.trim();
 
@@ -7,7 +9,7 @@ type GoogleAdsEventParams = Readonly<{
   locale?: "ar" | "en";
 }>;
 
-type GoogleTag = (command: "config" | "event", target: string, params?: object) => void;
+type GoogleTag = (command: "config" | "consent" | "event", target: string, params?: object) => void;
 
 declare global {
   interface Window {
@@ -17,13 +19,12 @@ declare global {
 }
 
 const TRACKING_ENABLED = process.env.NEXT_PUBLIC_GOOGLE_ADS_TRACKING_ENABLED === "true";
-const CONSENT_GRANTED = process.env.NEXT_PUBLIC_GOOGLE_ADS_CONSENT_GRANTED === "true";
 const TESTING_ENABLED = process.env.NEXT_PUBLIC_GOOGLE_ADS_TESTING === "true";
 const confirmedEventSubmissionIds = new Set<string>();
 const confirmedConversionSubmissionIds = new Set<string>();
 
 function isGoogleAdsTrackingAllowed(): boolean {
-  if (!TRACKING_ENABLED || !CONSENT_GRANTED) return false;
+  if (!TRACKING_ENABLED || !hasGrantedGoogleAdsConsent()) return false;
   return process.env.NODE_ENV === "production" || TESTING_ENABLED;
 }
 

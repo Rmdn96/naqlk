@@ -3,20 +3,23 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 type GoogleAdsModule = typeof import("@/lib/analytics/google-ads");
 
 async function loadGoogleAds({
-  consentGranted = "true",
+  consentGranted = true,
   conversionLabel = "625xCKaL_58dEN34s_5E",
   trackingEnabled = "true",
 }: {
-  consentGranted?: string;
+  consentGranted?: boolean;
   conversionLabel?: string;
   trackingEnabled?: string;
 } = {}): Promise<GoogleAdsModule> {
   vi.resetModules();
   vi.stubEnv("NODE_ENV", "test");
-  vi.stubEnv("NEXT_PUBLIC_GOOGLE_ADS_CONSENT_GRANTED", consentGranted);
   vi.stubEnv("NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL", conversionLabel);
   vi.stubEnv("NEXT_PUBLIC_GOOGLE_ADS_TESTING", "true");
   vi.stubEnv("NEXT_PUBLIC_GOOGLE_ADS_TRACKING_ENABLED", trackingEnabled);
+  window.localStorage.setItem("naqlk:google-ads:consent:v1", consentGranted ? "granted" : "denied");
+
+  const consent = await import("@/lib/analytics/google-ads-consent");
+  consent.initializeGoogleAdsConsent();
 
   return import("@/lib/analytics/google-ads");
 }
@@ -24,6 +27,7 @@ async function loadGoogleAds({
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllEnvs();
+  window.localStorage.clear();
   window.sessionStorage.clear();
   delete window.gtag;
 });
@@ -110,8 +114,8 @@ describe("Google Ads tracking infrastructure", () => {
   });
 
   it.each([
-    { consentGranted: "true", name: "tracking is disabled", trackingEnabled: "false" },
-    { consentGranted: "false", name: "consent is absent", trackingEnabled: "true" },
+    { consentGranted: true, name: "tracking is disabled", trackingEnabled: "false" },
+    { consentGranted: false, name: "consent is absent", trackingEnabled: "true" },
   ])("does nothing when $name", async ({ consentGranted, trackingEnabled }) => {
     const gtag = vi.fn();
     window.gtag = gtag;
@@ -125,13 +129,13 @@ describe("Google Ads tracking infrastructure", () => {
   it("keeps tracking and in-page dedupe working when sessionStorage fails", async () => {
     const gtag = vi.fn();
     window.gtag = gtag;
+    const { trackRequestConfirmed } = await loadGoogleAds();
     vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
       throw new Error("storage unavailable");
     });
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
       throw new Error("storage unavailable");
     });
-    const { trackRequestConfirmed } = await loadGoogleAds();
 
     expect(() => trackRequestConfirmed("submission-7", "ar")).not.toThrow();
     expect(() => trackRequestConfirmed("submission-7", "ar")).not.toThrow();
