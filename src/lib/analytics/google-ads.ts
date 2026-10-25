@@ -1,4 +1,5 @@
 import { hasGrantedGoogleAdsConsent } from "@/lib/analytics/google-ads-consent";
+import { getGoogleAdsPageContext } from "@/lib/analytics/google-ads-route";
 
 export const GOOGLE_ADS_TAG_ID = "AW-18518703197" as const;
 const GOOGLE_ADS_CONVERSION_LABEL = process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL?.trim();
@@ -7,6 +8,8 @@ export type GoogleAdsEventName = "request_started" | "whatsapp_opened" | "reques
 
 type GoogleAdsEventParams = Readonly<{
   locale?: "ar" | "en";
+  page_location: string;
+  page_referrer: "";
 }>;
 
 type GoogleTag = (command: "config" | "consent" | "event", target: string, params?: object) => void;
@@ -24,7 +27,9 @@ const confirmedEventSubmissionIds = new Set<string>();
 const confirmedConversionSubmissionIds = new Set<string>();
 
 function isGoogleAdsTrackingAllowed(): boolean {
-  if (!TRACKING_ENABLED || !hasGrantedGoogleAdsConsent()) return false;
+  if (!TRACKING_ENABLED || !hasGrantedGoogleAdsConsent() || !getGoogleAdsPageContext()) {
+    return false;
+  }
   return process.env.NODE_ENV === "production" || TESTING_ENABLED;
 }
 
@@ -54,14 +59,20 @@ function persistTrackedSubmission(storage: Storage | null, dedupeKey: string): v
 
 function sendGoogleAdsEvent(
   eventName: GoogleAdsEventName,
-  params: GoogleAdsEventParams = {},
+  params: Omit<GoogleAdsEventParams, "page_location" | "page_referrer"> = {},
 ): boolean {
-  if (!isGoogleAdsTrackingAllowed() || typeof window === "undefined" || !window.gtag) {
+  const pageContext = getGoogleAdsPageContext();
+  if (
+    !isGoogleAdsTrackingAllowed() ||
+    !pageContext ||
+    typeof window === "undefined" ||
+    !window.gtag
+  ) {
     return false;
   }
 
   try {
-    window.gtag("event", eventName, params);
+    window.gtag("event", eventName, { ...params, ...pageContext });
     return true;
   } catch {
     return false;
@@ -69,12 +80,14 @@ function sendGoogleAdsEvent(
 }
 
 export function trackRequestConfirmedConversion(locale: "ar" | "en"): boolean {
-  if (!GOOGLE_ADS_CONVERSION_LABEL || !isGoogleAdsTrackingAllowed()) return false;
+  const pageContext = getGoogleAdsPageContext();
+  if (!GOOGLE_ADS_CONVERSION_LABEL || !isGoogleAdsTrackingAllowed() || !pageContext) return false;
   if (typeof window === "undefined" || !window.gtag) return false;
 
   try {
     window.gtag("event", "conversion", {
       locale,
+      ...pageContext,
       send_to: `${GOOGLE_ADS_TAG_ID}/${GOOGLE_ADS_CONVERSION_LABEL}`,
     });
     return true;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { usePathname } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -15,9 +16,11 @@ import {
   subscribeToGoogleAdsConsent,
   syncGoogleAdsConsentFromStorage,
 } from "@/lib/analytics/google-ads-consent";
+import { isGoogleAdsConsentUiPathname } from "@/lib/analytics/google-ads-route";
 
 export function GoogleAdsConsentManager() {
   const t = useTranslations("GoogleAdsConsent");
+  const pathname = usePathname();
   const consent = useSyncExternalStore(
     subscribeToGoogleAdsConsent,
     getGoogleAdsConsentSnapshot,
@@ -47,7 +50,13 @@ export function GoogleAdsConsentManager() {
     };
   }, []);
 
-  if (consent === "pending" || (consent !== "unset" && !settingsOpen)) return null;
+  if (
+    !isGoogleAdsConsentUiPathname(pathname) ||
+    consent === "pending" ||
+    (consent !== "unset" && !settingsOpen)
+  ) {
+    return null;
+  }
 
   const chooseConsent = (choice: "denied" | "granted") => {
     const persisted = setGoogleAdsConsent(choice);

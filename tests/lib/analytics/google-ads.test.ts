@@ -1,6 +1,11 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 type GoogleAdsModule = typeof import("@/lib/analytics/google-ads");
+
+const SAFE_PAGE_CONTEXT = {
+  page_location: "http://localhost:3000/en/request",
+  page_referrer: "",
+} as const;
 
 async function loadGoogleAds({
   consentGranted = true,
@@ -23,6 +28,10 @@ async function loadGoogleAds({
 
   return import("@/lib/analytics/google-ads");
 }
+
+beforeEach(() => {
+  window.history.replaceState({}, "", "/en/request?reference=fake-sensitive-reference");
+});
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -51,9 +60,18 @@ describe("Google Ads tracking infrastructure", () => {
     trackRequestConfirmed("submission-1", "ar");
 
     expect(gtag.mock.calls).toEqual([
-      ["event", "request_confirmed", { locale: "ar" }],
-      ["event", "conversion", { locale: "ar", send_to: "AW-18518703197/625xCKaL_58dEN34s_5E" }],
+      ["event", "request_confirmed", { locale: "ar", ...SAFE_PAGE_CONTEXT }],
+      [
+        "event",
+        "conversion",
+        {
+          locale: "ar",
+          ...SAFE_PAGE_CONTEXT,
+          send_to: "AW-18518703197/625xCKaL_58dEN34s_5E",
+        },
+      ],
     ]);
+    expect(JSON.stringify(gtag.mock.calls)).not.toContain("fake-sensitive-reference");
   });
 
   it("deduplicates both events for the same submission ID", async () => {
@@ -87,7 +105,10 @@ describe("Google Ads tracking infrastructure", () => {
     trackRequestConfirmed("submission-4", "ar");
 
     expect(gtag).toHaveBeenCalledOnce();
-    expect(gtag).toHaveBeenCalledWith("event", "request_confirmed", { locale: "ar" });
+    expect(gtag).toHaveBeenCalledWith("event", "request_confirmed", {
+      locale: "ar",
+      ...SAFE_PAGE_CONTEXT,
+    });
   });
 
   it("never sends a conversion for request start or WhatsApp events", async () => {
@@ -99,9 +120,29 @@ describe("Google Ads tracking infrastructure", () => {
     trackWhatsAppOpened();
 
     expect(gtag.mock.calls).toEqual([
-      ["event", "request_started", { locale: "en" }],
-      ["event", "whatsapp_opened", {}],
+      ["event", "request_started", { locale: "en", ...SAFE_PAGE_CONTEXT }],
+      ["event", "whatsapp_opened", SAFE_PAGE_CONTEXT],
     ]);
+  });
+
+  it.each([
+    "/en/quote/fake-quote-token?reference=fake-reference",
+    "/ar/track/fake-tracking-token?phone=fake-phone",
+    "/en/account",
+    "/ar/login",
+    "/en/request/success?reference=fake-reference",
+  ])("blocks events on a direct sensitive route: %s", async (pathname) => {
+    window.history.replaceState({}, "", pathname);
+    const gtag = vi.fn();
+    window.gtag = gtag;
+    const { trackRequestConfirmed, trackRequestStarted, trackWhatsAppOpened } =
+      await loadGoogleAds();
+
+    trackRequestStarted("en");
+    trackWhatsAppOpened();
+    trackRequestConfirmed("fake-submission-token", "en");
+
+    expect(gtag).not.toHaveBeenCalled();
   });
 
   it("does nothing when gtag is absent", async () => {
@@ -153,9 +194,17 @@ describe("Google Ads tracking infrastructure", () => {
     trackRequestConfirmed("submission-8", "ar");
 
     expect(gtag.mock.calls).toEqual([
-      ["event", "request_confirmed", { locale: "ar" }],
-      ["event", "conversion", { locale: "ar", send_to: "AW-18518703197/625xCKaL_58dEN34s_5E" }],
-      ["event", "request_confirmed", { locale: "ar" }],
+      ["event", "request_confirmed", { locale: "ar", ...SAFE_PAGE_CONTEXT }],
+      [
+        "event",
+        "conversion",
+        {
+          locale: "ar",
+          ...SAFE_PAGE_CONTEXT,
+          send_to: "AW-18518703197/625xCKaL_58dEN34s_5E",
+        },
+      ],
+      ["event", "request_confirmed", { locale: "ar", ...SAFE_PAGE_CONTEXT }],
     ]);
   });
 
@@ -173,9 +222,25 @@ describe("Google Ads tracking infrastructure", () => {
     trackRequestConfirmed("submission-9", "en");
 
     expect(gtag.mock.calls).toEqual([
-      ["event", "request_confirmed", { locale: "en" }],
-      ["event", "conversion", { locale: "en", send_to: "AW-18518703197/625xCKaL_58dEN34s_5E" }],
-      ["event", "conversion", { locale: "en", send_to: "AW-18518703197/625xCKaL_58dEN34s_5E" }],
+      ["event", "request_confirmed", { locale: "en", ...SAFE_PAGE_CONTEXT }],
+      [
+        "event",
+        "conversion",
+        {
+          locale: "en",
+          ...SAFE_PAGE_CONTEXT,
+          send_to: "AW-18518703197/625xCKaL_58dEN34s_5E",
+        },
+      ],
+      [
+        "event",
+        "conversion",
+        {
+          locale: "en",
+          ...SAFE_PAGE_CONTEXT,
+          send_to: "AW-18518703197/625xCKaL_58dEN34s_5E",
+        },
+      ],
     ]);
   });
 });

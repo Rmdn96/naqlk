@@ -1,3 +1,5 @@
+import { isGoogleAdsPublicPathname } from "@/lib/analytics/google-ads-route";
+
 export const GOOGLE_ADS_CONSENT_STORAGE_KEY = "naqlk:google-ads:consent:v1" as const;
 export const GOOGLE_ADS_CONSENT_SETTINGS_EVENT = "naqlk:google-ads:consent-settings" as const;
 
@@ -43,6 +45,11 @@ function updateLoadedGoogleTagConsent(choice: GoogleAdsConsentChoice): void {
   }
 }
 
+function getRouteAwareConsent(choice: GoogleAdsConsentChoice): GoogleAdsConsentChoice {
+  if (choice !== "granted" || typeof window === "undefined") return "denied";
+  return isGoogleAdsPublicPathname(window.location.pathname) ? "granted" : "denied";
+}
+
 export function subscribeToGoogleAdsConsent(listener: () => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);
@@ -63,11 +70,19 @@ export function initializeGoogleAdsConsent(): void {
 export function syncGoogleAdsConsentFromStorage(): void {
   const storedConsent = readStoredConsent();
   replaceConsentSnapshot(storedConsent);
-  updateLoadedGoogleTagConsent(storedConsent === "granted" ? "granted" : "denied");
+  updateLoadedGoogleTagConsent(
+    getRouteAwareConsent(storedConsent === "granted" ? "granted" : "denied"),
+  );
 }
 
 export function hasGrantedGoogleAdsConsent(): boolean {
   return consentSnapshot === "granted";
+}
+
+export function applyGoogleAdsConsentForRoute(routeAllowed: boolean): void {
+  updateLoadedGoogleTagConsent(
+    routeAllowed && consentSnapshot === "granted" ? "granted" : "denied",
+  );
 }
 
 export function setGoogleAdsConsent(choice: GoogleAdsConsentChoice): boolean {
@@ -84,7 +99,9 @@ export function setGoogleAdsConsent(choice: GoogleAdsConsentChoice): boolean {
 
   const effectiveChoice = choice === "granted" && !persisted ? "unset" : choice;
   replaceConsentSnapshot(effectiveChoice);
-  updateLoadedGoogleTagConsent(effectiveChoice === "granted" ? "granted" : "denied");
+  updateLoadedGoogleTagConsent(
+    getRouteAwareConsent(effectiveChoice === "granted" ? "granted" : "denied"),
+  );
 
   return persisted;
 }

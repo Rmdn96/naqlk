@@ -6,6 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ar from "../../messages/ar.json";
 import en from "../../messages/en.json";
 
+const navigation = vi.hoisted(() => ({ pathname: "/en/request" }));
+
 vi.mock("next/script", () => ({
   default: ({ children, id, src }: { children?: React.ReactNode; id: string; src?: string }) => (
     <div data-src={src} data-testid={id} id={id}>
@@ -26,9 +28,16 @@ vi.mock("@/i18n/navigation", () => ({
   ),
 }));
 
+vi.mock("next/navigation", () => ({
+  usePathname: () => navigation.pathname,
+}));
+
 const CONSENT_KEY = "naqlk:google-ads:consent:v1";
 
-async function renderConsent(locale: "ar" | "en" = "en") {
+async function renderConsent(
+  locale: "ar" | "en" = "en",
+  initialUrl = `/${locale}/request?reference=fake-sensitive-reference`,
+) {
   vi.resetModules();
   const [{ GoogleAdsConsentManager }, { GoogleAdsConsentSettingsButton }, { GoogleAdsTag }] =
     await Promise.all([
@@ -37,19 +46,35 @@ async function renderConsent(locale: "ar" | "en" = "en") {
       import("@/components/analytics/google-ads-tag"),
     ]);
 
-  return render(
+  const setUrl = (url: string) => {
+    window.history.replaceState({}, "", url);
+    navigation.pathname = new URL(url, window.location.origin).pathname;
+  };
+  const ui = () => (
     <NextIntlClientProvider locale={locale} messages={locale === "ar" ? ar : en}>
       <GoogleAdsTag />
       <GoogleAdsConsentSettingsButton />
       <GoogleAdsConsentManager />
-    </NextIntlClientProvider>,
+    </NextIntlClientProvider>
   );
+
+  setUrl(initialUrl);
+  const result = render(ui());
+  return {
+    ...result,
+    navigate(url: string) {
+      setUrl(url);
+      result.rerender(ui());
+    },
+  };
 }
 
 beforeEach(() => {
   vi.stubEnv("NODE_ENV", "test");
   vi.stubEnv("NEXT_PUBLIC_GOOGLE_ADS_TESTING", "true");
   vi.stubEnv("NEXT_PUBLIC_GOOGLE_ADS_TRACKING_ENABLED", "true");
+  navigation.pathname = "/en/request";
+  window.history.replaceState({}, "", "/en/request");
   window.localStorage.clear();
   delete window.gtag;
 });
@@ -72,7 +97,11 @@ describe("Google Ads runtime consent", () => {
     fireEvent.click(screen.getByRole("button", { name: "Accept advertising measurement" }));
 
     await waitFor(() => expect(screen.getByTestId("naqlk-google-ads-tag")).toBeTruthy());
-    expect(screen.getByTestId("naqlk-google-ads-config")).toBeTruthy();
+    const config = screen.getByTestId("naqlk-google-ads-config");
+    expect(config.textContent).toContain("send_page_view: false");
+    expect(config.textContent).toContain("page_referrer: ''");
+    expect(config.textContent).toContain('window.location.origin + "/en/request"');
+    expect(config.textContent).not.toContain("fake-sensitive-reference");
     expect(window.localStorage.getItem(CONSENT_KEY)).toBe("granted");
   });
 
@@ -107,7 +136,7 @@ describe("Google Ads runtime consent", () => {
 
     await waitFor(() => expect(screen.queryByTestId("naqlk-google-ads-tag")).toBeNull());
     expect(window.localStorage.getItem(CONSENT_KEY)).toBe("denied");
-    expect(gtag).toHaveBeenCalledWith("consent", "update", {
+    expect(gtag).toHaveBeenLastCalledWith("consent", "update", {
       ad_personalization: "denied",
       ad_storage: "denied",
       ad_user_data: "denied",
@@ -116,7 +145,92 @@ describe("Google Ads runtime consent", () => {
 
     const { trackRequestStarted } = await import("@/lib/analytics/google-ads");
     trackRequestStarted("en");
-    expect(gtag).toHaveBeenCalledTimes(1);
+    expect(gtag).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    "/en/quote/fake-quote-token?reference=fake-reference",
+    "/ar/track/fake-tracking-token?phone=fake-phone",
+    "/en/account",
+    "/ar/login",
+    "/en/request/success?reference=fake-reference",
+  ])("does not load the tag on a direct sensitive route: %s", async (url) => {
+    window.localStorage.setItem(CONSENT_KEY, "granted");
+    await renderConsent(url.startsWith("/ar/") ? "ar" : "en", url);
+
+    await waitFor(() => expect(screen.queryByTestId("naqlk-google-ads-tag")).toBeNull());
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("denies consent after public-to-private navigation and restores it on return", async () => {
+    window.localStorage.setItem(CONSENT_KEY, "granted");
+    const gtag = vi.fn();
+    window.gtag = gtag;
+    const view = await renderConsent();
+    await waitFor(() => expect(screen.getByTestId("naqlk-google-ads-tag")).toBeTruthy());
+
+    view.navigate("/en/quote/fake-quote-token?reference=fake-reference");
+
+    await waitFor(() => expect(screen.queryByTestId("naqlk-google-ads-tag")).toBeNull());
+    expect(gtag).toHaveBeenLastCalledWith("consent", "update", {
+      ad_personalization: "denied",
+      ad_storage: "denied",
+      ad_user_data: "denied",
+      analytics_storage: "denied",
+    });
+
+    const callsBeforeBlockedEvent = gtag.mock.calls.length;
+    const { trackRequestStarted } = await import("@/lib/analytics/google-ads");
+    trackRequestStarted("en");
+    expect(gtag).toHaveBeenCalledTimes(callsBeforeBlockedEvent);
+
+    view.navigate("/en/request?reference=another-fake-reference");
+
+    await waitFor(() => expect(screen.getByTestId("naqlk-google-ads-tag")).toBeTruthy());
+    expect(gtag).toHaveBeenLastCalledWith("consent", "update", {
+      ad_personalization: "granted",
+      ad_storage: "granted",
+      ad_user_data: "granted",
+      analytics_storage: "granted",
+    });
+  });
+
+  it("keeps a loaded tag denied when consent storage syncs on a sensitive route", async () => {
+    window.localStorage.setItem(CONSENT_KEY, "granted");
+    const gtag = vi.fn();
+    window.gtag = gtag;
+    const view = await renderConsent();
+    await waitFor(() => expect(screen.getByTestId("naqlk-google-ads-tag")).toBeTruthy());
+
+    view.navigate("/en/account?token=fake-sensitive-token");
+    window.dispatchEvent(new StorageEvent("storage", { key: CONSENT_KEY, newValue: "granted" }));
+
+    expect(gtag).toHaveBeenLastCalledWith("consent", "update", {
+      ad_personalization: "denied",
+      ad_storage: "denied",
+      ad_user_data: "denied",
+      analytics_storage: "denied",
+    });
+  });
+
+  it("stores consent on the privacy page without granting a loaded tag there", async () => {
+    window.localStorage.setItem(CONSENT_KEY, "granted");
+    const gtag = vi.fn();
+    window.gtag = gtag;
+    const view = await renderConsent();
+    await waitFor(() => expect(screen.getByTestId("naqlk-google-ads-tag")).toBeTruthy());
+
+    view.navigate("/en/privacy");
+    fireEvent.click(screen.getByRole("button", { name: "Advertising privacy choices" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Accept advertising measurement" }));
+
+    expect(window.localStorage.getItem(CONSENT_KEY)).toBe("granted");
+    expect(gtag).toHaveBeenLastCalledWith("consent", "update", {
+      ad_personalization: "denied",
+      ad_storage: "denied",
+      ad_user_data: "denied",
+      analytics_storage: "denied",
+    });
   });
 
   it("fails closed and keeps the prompt visible when acceptance cannot be stored", async () => {
