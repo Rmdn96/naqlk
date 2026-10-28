@@ -32,7 +32,9 @@ NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL=625xCKaL_58dEN34s_5E
 NEXT_PUBLIC_GOOGLE_ADS_TESTING=false
 ```
 
-The application asks each visitor for advertising-measurement consent at runtime and defaults to denied. It does not load the Google tag or send Ads events before acceptance. The choice is stored in browser local storage and can be changed later from the footer; withdrawing consent blocks later events and updates Google consent state if the tag was already loaded. The request-form privacy acknowledgement remains separate and covers processing the request only. Rebuild after any build-time configuration change, and do not create a real request or synthetic Ads conversion as a deployment test.
+`NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL` remains the completed-request conversion action. WhatsApp link clicks use the dedicated `GRLaCKXv5KwdEN34s_5E` action and must not reuse the completed-request label.
+
+The application asks each visitor for advertising-measurement consent at runtime and defaults to denied. It does not load the Google tag or send Ads events before acceptance. The choice is stored in browser local storage and can be changed later from the footer; withdrawing consent blocks later events and updates Google consent state if the tag was already loaded. A selected WhatsApp link sends the `whatsapp_opened` event plus exactly one conversion to `AW-18518703197/GRLaCKXv5KwdEN34s_5E`; opening the number picker does not send either event. The request-form privacy acknowledgement remains separate and covers processing the request only. Rebuild after any build-time configuration change, and do not create a real request or synthetic Ads conversion as a deployment test.
 
 ## Release verification
 

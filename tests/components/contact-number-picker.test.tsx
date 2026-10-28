@@ -1,16 +1,21 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ContactNumberPicker } from "@/components/shared/contact-number-picker";
 import { CONTACT_NUMBERS } from "@/config/contact";
 import ar from "../../messages/ar.json";
 import en from "../../messages/en.json";
 
+const analytics = vi.hoisted(() => ({ trackWhatsAppOpened: vi.fn() }));
+
+vi.mock("@/lib/analytics/google-ads", () => analytics);
+
 const originalContacts = CONTACT_NUMBERS.map((contact) => ({ ...contact }));
 
 afterEach(() => {
   cleanup();
+  analytics.trackWhatsAppOpened.mockClear();
   CONTACT_NUMBERS.splice(
     0,
     CONTACT_NUMBERS.length,
@@ -81,6 +86,20 @@ describe("ContactNumberPicker", () => {
     fireEvent.click(screen.getByRole("button", { name: "Contact us" }));
     const whatsappLink = screen.getAllByRole("link", { name: /WhatsApp/ })[0];
     expect(whatsappLink.getAttribute("href")).toContain("text=Hello+Naqlk");
+  });
+
+  it("tracks exactly once only when a real WhatsApp link is clicked", () => {
+    renderPicker();
+
+    fireEvent.click(screen.getByRole("button", { name: "Contact us" }));
+    expect(analytics.trackWhatsAppOpened).not.toHaveBeenCalled();
+
+    const whatsappLink = screen.getAllByRole("link", { name: /WhatsApp/ })[0];
+    const href = whatsappLink.getAttribute("href");
+    fireEvent.click(whatsappLink);
+
+    expect(analytics.trackWhatsAppOpened).toHaveBeenCalledTimes(1);
+    expect(whatsappLink.getAttribute("href")).toBe(href);
   });
 
   it("uses the Arabic translations while keeping phone values LTR", () => {

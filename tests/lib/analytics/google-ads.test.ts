@@ -46,6 +46,7 @@ describe("Google Ads tracking infrastructure", () => {
     const source = await loadGoogleAds();
 
     expect(source.GOOGLE_ADS_TAG_ID).toBe("AW-18518703197");
+    expect(source.GOOGLE_ADS_WHATSAPP_CONVERSION_LABEL).toBe("GRLaCKXv5KwdEN34s_5E");
     expect(source.trackRequestStarted).toBeTypeOf("function");
     expect(source.trackWhatsAppOpened).toBeTypeOf("function");
     expect(source.trackRequestConfirmed).toBeTypeOf("function");
@@ -111,7 +112,7 @@ describe("Google Ads tracking infrastructure", () => {
     });
   });
 
-  it("never sends a conversion for request start or WhatsApp events", async () => {
+  it("sends exactly one WhatsApp conversion alongside the custom event", async () => {
     const gtag = vi.fn();
     window.gtag = gtag;
     const { trackRequestStarted, trackWhatsAppOpened } = await loadGoogleAds();
@@ -122,7 +123,13 @@ describe("Google Ads tracking infrastructure", () => {
     expect(gtag.mock.calls).toEqual([
       ["event", "request_started", { locale: "en", ...SAFE_PAGE_CONTEXT }],
       ["event", "whatsapp_opened", SAFE_PAGE_CONTEXT],
+      ["event", "conversion", { send_to: "AW-18518703197/GRLaCKXv5KwdEN34s_5E" }],
     ]);
+    expect(
+      gtag.mock.calls.filter(
+        ([command, eventName]) => command === "event" && eventName === "conversion",
+      ),
+    ).toHaveLength(1);
   });
 
   it.each([
@@ -146,9 +153,10 @@ describe("Google Ads tracking infrastructure", () => {
   });
 
   it("does nothing when gtag is absent", async () => {
-    const { trackRequestConfirmed } = await loadGoogleAds();
+    const { trackRequestConfirmed, trackWhatsAppOpened } = await loadGoogleAds();
 
     expect(() => trackRequestConfirmed("submission-5", "ar")).not.toThrow();
+    expect(() => trackWhatsAppOpened()).not.toThrow();
     expect(
       window.sessionStorage.getItem("naqlk:google-ads:request-confirmed:submission-5"),
     ).toBeNull();
@@ -160,9 +168,13 @@ describe("Google Ads tracking infrastructure", () => {
   ])("does nothing when $name", async ({ consentGranted, trackingEnabled }) => {
     const gtag = vi.fn();
     window.gtag = gtag;
-    const { trackRequestConfirmed } = await loadGoogleAds({ consentGranted, trackingEnabled });
+    const { trackRequestConfirmed, trackWhatsAppOpened } = await loadGoogleAds({
+      consentGranted,
+      trackingEnabled,
+    });
 
     trackRequestConfirmed("submission-6", "en");
+    trackWhatsAppOpened();
 
     expect(gtag).not.toHaveBeenCalled();
   });

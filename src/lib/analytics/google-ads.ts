@@ -2,6 +2,7 @@ import { hasGrantedGoogleAdsConsent } from "@/lib/analytics/google-ads-consent";
 import { getGoogleAdsPageContext } from "@/lib/analytics/google-ads-route";
 
 export const GOOGLE_ADS_TAG_ID = "AW-18518703197" as const;
+export const GOOGLE_ADS_WHATSAPP_CONVERSION_LABEL = "GRLaCKXv5KwdEN34s_5E" as const;
 const GOOGLE_ADS_CONVERSION_LABEL = process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL?.trim();
 
 export type GoogleAdsEventName = "request_started" | "whatsapp_opened" | "request_confirmed";
@@ -101,8 +102,23 @@ export function trackRequestStarted(locale: "ar" | "en"): void {
   sendGoogleAdsEvent("request_started", { locale });
 }
 
+function trackWhatsAppOpenedConversion(): boolean {
+  if (!isGoogleAdsTrackingAllowed() || typeof window === "undefined" || !window.gtag) return false;
+
+  try {
+    window.gtag("event", "conversion", {
+      send_to: `${GOOGLE_ADS_TAG_ID}/${GOOGLE_ADS_WHATSAPP_CONVERSION_LABEL}`,
+    });
+    return true;
+  } catch {
+    // Tracking must never affect WhatsApp navigation.
+    return false;
+  }
+}
+
 export function trackWhatsAppOpened(): void {
   sendGoogleAdsEvent("whatsapp_opened");
+  trackWhatsAppOpenedConversion();
 }
 
 /**
