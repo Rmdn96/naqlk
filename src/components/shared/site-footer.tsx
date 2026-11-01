@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 
 import { GoogleAdsConsentSettingsButton } from "@/components/analytics/google-ads-consent-settings-button";
 import { Brand } from "@/components/shared/brand";
+import { CONTACT_NUMBERS } from "@/config/contact";
 import { ContactNumberPicker } from "@/components/shared/contact-number-picker";
 import { getLocale } from "next-intl/server";
 import { getPublicBusinessConfiguration } from "@/lib/business-settings/public-settings";
@@ -23,6 +24,9 @@ export async function SiteFooter() {
           <Brand />
           <p className="mt-5 max-w-xl text-sm leading-7 text-primary-foreground/75">
             {t("footerText")}
+          </p>
+          <p className="mt-3 max-w-xl text-sm leading-7 text-primary-foreground/75">
+            {t("requestDisclosure")}
           </p>
         </div>
         <div className="flex flex-col gap-3 text-sm text-primary-foreground/75">
@@ -55,6 +59,12 @@ export async function SiteFooter() {
         </div>
         <div className="space-y-3 text-sm text-primary-foreground/75">
           <strong className="block text-primary-foreground">{t("contact")}</strong>
+          {business.phone ? <p dir="ltr">{business.phone}</p> : null}
+          {CONTACT_NUMBERS.map((contact) => (
+            <p dir="ltr" key={contact.id}>
+              {contact.phone}
+            </p>
+          ))}
           <ContactNumberPicker
             allowCall
             ariaLabel={t("whatsapp")}

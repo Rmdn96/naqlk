@@ -32,7 +32,7 @@ The active locales are `ar` and `en`; Arabic is the default and always uses RTL 
 4. **Contact:** name, normalized Saudi mobile, optional email, and optional notes.
 5. **Review:** complete summary and explicit acceptance of privacy notice `public-request-v1`.
 
-Text and structured progress are saved to `localStorage` under a versioned key. File bytes are deliberately excluded because browsers cannot safely restore `File` access after refresh. The UI explains that photos must be selected again.
+As of November 1, 2026, only service, city IDs, quantity and selected options are saved to `localStorage` under a v2 key, expiring 24 hours after the most recent save. Opening or editing the request form saves selections again. Personal/free-text fields, exact addresses, coordinates, consent, submission IDs and file bytes remain in page memory. Refresh requires re-entering those fields and reselecting photos. Legacy v1 drafts are deleted on the next updated-site visit. Expired progress is cleaned on visits, window focus and every minute while the public chrome is mounted. Successful submission cancels pending saves and clears progress; blocked browser storage does not interrupt submission.
 
 ## 4. Server Actions
 

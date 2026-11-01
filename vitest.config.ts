@@ -19,7 +19,7 @@ export default defineConfig({
     },
     environment: "jsdom",
     include: ["tests/**/*.{test,spec}.{ts,tsx}"],
-    exclude: ["tests/e2e/**"],
+    exclude: ["tests/e2e/**", "tests/release/**"],
     passWithNoTests: true,
   },
 });

@@ -25,6 +25,7 @@
     "switchLocale": "العربية",
     "switchLocaleLabel": "View the website in Arabic",
     "footerText": "An Arabic-first transport and logistics request platform for Saudi Arabia.",
+    "requestDisclosure": "Requests are reviewed before quotation. Sending a request does not confirm a booking or final price; review the quotation before accepting.",
     "copyright": "All rights reserved by Naqlk."
   },
   "ContactPicker": {
@@ -87,7 +88,7 @@
     "reviewsTitle": "Naqlk customer experiences",
     "reviewsEmpty": "Consented, approved customer reviews will appear here when available.",
     "finalTitle": "Ready to start your request?",
-    "finalDescription": "Your progress is saved automatically so you can complete it from your phone in minutes.",
+    "finalDescription": "Send a request for review and a quotation. Submitting the form does not confirm a booking or final price.",
     "catalogError": "The service catalog is temporarily unavailable. Please try again shortly."
   },
   "Request": {
@@ -95,14 +96,15 @@
     "metaDescription": "Send a transport service request to Naqlk in five clear and secure steps.",
     "eyebrow": "New request",
     "title": "Tell us about your transport needs",
-    "subtitle": "Five short steps, with progress saved on this device until you finish.",
+    "subtitle": "Five short steps. Service, cities, quantity and options are saved for up to 24 hours after their most recent save. Contact details, exact addresses, cargo text and notes stay in this page and must be re-entered after a refresh.",
     "stepLabel": "Step {current} of {total}",
     "step1": "Service",
     "step2": "Locations",
     "step3": "Cargo",
     "step4": "Contact",
     "step5": "Review",
-    "saved": "Progress saved on this device",
+    "saved": "Service and route selections saved for 24 hours",
+    "saveUnavailable": "Device saving unavailable; you can still submit this form",
     "saving": "Saving progress…",
     "back": "Back",
     "next": "Continue",
@@ -429,7 +431,7 @@
     "metaTitle": "Transport request privacy notice | Naqlk",
     "metaDescription": "Learn how Naqlk uses and protects the information submitted through a transport service request.",
     "title": "Service request privacy notice",
-    "updated": "Version: public-request-v1",
+    "updated": "Updated: November 1, 2026",
     "intro": "This short notice explains how information submitted through the service request form is used.",
     "collectionTitle": "What do we collect?",
     "collectionBody": "We collect contact details, pickup and delivery addresses, cargo details, and any photos you choose to attach.",
@@ -437,10 +439,12 @@
     "purposeBody": "We use the information to review your request, contact you, prepare an appropriate quotation, and support delivery if approved.",
     "storageTitle": "How are attachments protected?",
     "storageBody": "Attachments are stored privately and are not published. Access is limited by authorization and operational purpose.",
+    "draftTitle": "Drafts on this device",
+    "draftBody": "Only service, pickup and delivery cities, quantity and selected options are saved in localStorage. These selections expire 24 hours after their most recent save and are removed on your next site visit or while the site is open. Opening or editing the request form saves selections again. Contact details, exact addresses, coordinates, cargo descriptions, notes, photos and form consent are not saved in browser storage. They remain in memory while this page is open. Old drafts containing personal details are deleted when you revisit the updated site. A successful submission clears saved selections. Clear this site's browser data to remove them yourself. Submitted requests are separate server records; draft expiry does not delete them.",
     "choiceTitle": "Your choices",
     "choiceBody": "Email and photos are optional. We cannot review a request without a name, mobile number, route addresses, and cargo description.",
     "advertisingTitle": "Advertising measurement",
-    "advertisingBody": "Google Ads measurement stays disabled unless you accept it in the advertising privacy prompt. Your choice is stored in this browser and can be changed later from the site footer.",
+    "advertisingBody": "Google Ads measurement stays disabled unless you accept it in the advertising privacy prompt. Your choice is stored in this browser and can be changed later from the site footer. After acceptance, Google may receive advertising events and use advertising cookies. Form field values are not included in these events. WhatsApp and phone links open external services subject to their own privacy practices. You can contact Naqlk through the contact options in the footer about your information.",
     "back": "Back to the request"
   }
 }

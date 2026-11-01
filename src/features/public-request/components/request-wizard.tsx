@@ -327,7 +327,11 @@ export function RequestWizard({
               ) : (
                 <Save aria-hidden="true" className="size-4" />
               )}
-              {saveStatus === "saving" ? t("saving") : t("saved")}
+              {saveStatus === "saving"
+                ? t("saving")
+                : saveStatus === "unavailable"
+                  ? t("saveUnavailable")
+                  : t("saved")}
             </p>
           </div>
           <ol

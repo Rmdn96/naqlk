@@ -45,6 +45,7 @@ export default async function PrivacyPage({ params }: PrivacyPageProps) {
     [t("collectionTitle"), t("collectionBody")],
     [t("purposeTitle"), t("purposeBody")],
     [t("storageTitle"), t("storageBody")],
+    [t("draftTitle"), t("draftBody")],
     [t("choiceTitle"), t("choiceBody")],
     [t("advertisingTitle"), t("advertisingBody")],
   ];
